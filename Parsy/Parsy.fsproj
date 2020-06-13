@@ -8,7 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Library.fs" />
+    <Compile Include="TextParser.fsi" />
+    <Compile Include="TextParser.fs" />
+    <Compile Include="ReferenceTextParser.fsi" />
+    <Compile Include="ReferenceTextParser.fs" />
+    <Compile Include="OptimisedTextParser.fsi" />
+    <Compile Include="OptimisedTextParser.fs" />
   </ItemGroup>
 
   <ItemGroup>
