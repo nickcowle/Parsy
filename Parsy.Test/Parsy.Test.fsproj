@@ -12,9 +12,11 @@
 
   <ItemGroup>
     <Compile Include="TextParserGenerator.fs" />
+    <Compile Include="ParserGenerator.fs" />
     <Compile Include="TestUtils.fs" />
     <Compile Include="TestTextParser.fs" />
     <Compile Include="TestTextParserReducer.fs" />
+    <Compile Include="TestParser.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

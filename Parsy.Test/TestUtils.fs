@@ -7,6 +7,9 @@ type TextParserType =
 | ReferenceTextParser
 | OptimisedTextParser
 
+type ParserType =
+| ReferenceParser
+
 [<RequireQualifiedAccess>]
 module TestUtils =
 
@@ -24,9 +27,20 @@ module TestUtils =
                 |> Seq.map (fun segment -> segment |> StringSegment.consumed, segment |> StringSegment.remaining)
                 |> Set.ofSeq
 
+    let makeParser =
+        function
+        | ReferenceParser ->
+            fun parser input ->
+                ReferenceParser.make parser input
+                |> Set.ofList
+
     let config =
         { Config.QuickThrowOnFailure with
-            Arbitrary = [ typeof<TextParserGenerator.Marker>.DeclaringType ]
+            Arbitrary =
+                [
+                typeof<TextParserGenerator.Marker>.DeclaringType
+                typeof<ParserGenerator.Marker>.DeclaringType
+                ]
             MaxTest = 10_000
             EndSize = 4
         }

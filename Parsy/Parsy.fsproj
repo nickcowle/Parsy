@@ -18,6 +18,14 @@
     <Compile Include="OptimisedTextParser.fs" />
     <Compile Include="TextParserReducer.fsi" />
     <Compile Include="TextParserReducer.fs" />
+    <Compile Include="Parser.fsi" />
+    <Compile Include="Parser.fs" />
+    <Compile Include="ReferenceParser.fsi" />
+    <Compile Include="ReferenceParser.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TypeEquality" Version="0.3.0" />
   </ItemGroup>
 
   <ItemGroup>
