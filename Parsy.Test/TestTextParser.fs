@@ -220,6 +220,15 @@ module TestTextParser =
 
     [<Theory>]
     [<MemberData(allParserTypes)>]
+    let ``zeroOrMore fail is equivalent to success`` (parserType : ParserType) =
+        let prop (NonNull input) =
+            let expectedParser = TextParser.success |> makeParser parserType
+            let actualParser = TextParser.zeroOrMore TextParser.fail |> makeParser parserType
+            expectedParser input = actualParser input
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
     let ``oneOrMore returns all n possible parses when parsing a string repeated n times`` (parserType : ParserType) =
         let prop (NonEmptyString s) (NonNegativeInt n) =
             let parser = TextParser.string s |> TextParser.oneOrMore |> makeParser parserType
@@ -227,6 +236,15 @@ module TestTextParser =
             let expectedParsed = [1..n] |> List.map (fun i -> String.replicate i s, String.replicate (n - i) s) |> Set.ofSeq
             let actualParsed = parser input
             actualParsed = expectedParsed
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``oneOrMore fail is equivalent to fail`` (parserType : ParserType) =
+        let prop (NonNull input) =
+            let expectedParser = TextParser.fail |> makeParser parserType
+            let actualParser = TextParser.oneOrMore TextParser.fail |> makeParser parserType
+            expectedParser input = actualParser input
         check prop
 
     [<Theory>]

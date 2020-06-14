@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="TestTextParserUtils.fs" />
     <Compile Include="TestTextParser.fs" />
+    <Compile Include="TestTextParserReducer.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

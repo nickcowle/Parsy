@@ -10,10 +10,14 @@
   <ItemGroup>
     <Compile Include="TextParser.fsi" />
     <Compile Include="TextParser.fs" />
+    <Compile Include="TextParserUtils.fsi" />
+    <Compile Include="TextParserUtils.fs" />
     <Compile Include="ReferenceTextParser.fsi" />
     <Compile Include="ReferenceTextParser.fs" />
     <Compile Include="OptimisedTextParser.fsi" />
     <Compile Include="OptimisedTextParser.fs" />
+    <Compile Include="TextParserReducer.fsi" />
+    <Compile Include="TextParserReducer.fs" />
   </ItemGroup>
 
   <ItemGroup>
