@@ -11,7 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="TestTextParserUtils.fs" />
+    <Compile Include="TextParserGenerator.fs" />
+    <Compile Include="TestUtils.fs" />
     <Compile Include="TestTextParser.fs" />
     <Compile Include="TestTextParserReducer.fs" />
     <Compile Include="Program.fs" />

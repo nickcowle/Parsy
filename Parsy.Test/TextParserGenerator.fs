@@ -1,46 +1,27 @@
 ﻿namespace Parsy.Test
 
+
 open FsCheck
 open Parsy
 
+
 [<NoEquality>]
 [<NoComparison>]
-type ParserAndSampleInput = ParserAndSampleInput of TextParser * string
+type TextParserAndSampleInput = TextParserAndSampleInput of TextParser * string
 
-type ParserType =
-| ReferenceTextParser
-| OptimisedTextParser
 
 [<RequireQualifiedAccess>]
-module TestTextParserUtils =
-
-    let makeParser =
-        function
-        | ReferenceTextParser ->
-            fun parser input ->
-                ReferenceTextParser.make parser input
-                |> Set.ofList
-        | OptimisedTextParser ->
-            fun parser input ->
-                let parses = ResizeArray ()
-                OptimisedTextParser.make parser parses.Add (StringSegment.ofString input)
-                parses
-                |> Seq.map (fun segment -> segment |> StringSegment.consumed, segment |> StringSegment.remaining)
-                |> Set.ofSeq
+module TextParserGenerator =
 
     type Marker = Marker
 
-    let config = { Config.QuickThrowOnFailure with Arbitrary = [ typeof<Marker>.DeclaringType ] ; MaxTest = 10_000 ; EndSize = 4 }
+    let parsersAndInputs : Arbitrary<TextParserAndSampleInput> =
 
-    let check prop = Check.One(config, prop)
+        let make p i = TextParserAndSampleInput (p, i)
 
-    let parsersAndInputs : Arbitrary<ParserAndSampleInput> =
+        let parser (TextParserAndSampleInput (parser, _)) = parser
 
-        let make p i = ParserAndSampleInput (p, i)
-
-        let parser (ParserAndSampleInput (parser, _)) = parser
-
-        let input (ParserAndSampleInput (_ , input)) = input
+        let input (TextParserAndSampleInput (_ , input)) = input
 
         let success =
             let makeSuccess (NonNull s) = make TextParser.success s
@@ -50,9 +31,9 @@ module TestTextParserUtils =
             let makeFail (NonNull s) = make TextParser.fail s
             Arb.generate |> Gen.map makeFail
 
-        let choice (parsersAndInputs : ParserAndSampleInput Gen) =
+        let choice (parsersAndInputs : TextParserAndSampleInput Gen) =
 
-            let makeChoice (ps : ParserAndSampleInput list) =
+            let makeChoice (ps : TextParserAndSampleInput list) =
                 match ps with
                 | [] ->
                     Arb.generate |> Gen.map (fun (NonNull s) -> make ([] |> TextParser.choice) s)
@@ -62,41 +43,41 @@ module TestTextParserUtils =
 
             parsersAndInputs |> Gen.listOf >>= makeChoice
 
-        let sequence (parsersAndInputs : ParserAndSampleInput Gen) =
+        let sequence (parsersAndInputs : TextParserAndSampleInput Gen) =
 
-            let makeSequence (p1 : ParserAndSampleInput) (p2 : ParserAndSampleInput) =
+            let makeSequence (p1 : TextParserAndSampleInput) (p2 : TextParserAndSampleInput) =
                 make (TextParser.sequence (parser p1) (parser p2)) (input p1 + input p2)
 
             parsersAndInputs |> Gen.map makeSequence <*> parsersAndInputs
 
-        let zeroOrMore (parsersAndInputs : ParserAndSampleInput Gen) =
+        let zeroOrMore (parsersAndInputs : TextParserAndSampleInput Gen) =
 
-            let makeZeroOrMore (ParserAndSampleInput (parser, input)) (c : char) (n : int) =
+            let makeZeroOrMore (TextParserAndSampleInput (parser, input)) (c : char) (n : int) =
                 let parser = TextParser.sequence (TextParser.character c) parser |> TextParser.zeroOrMore
                 let input = sprintf "%c%s" c input |> String.replicate n
                 make parser input
 
             parsersAndInputs |> Gen.map makeZeroOrMore <*> Arb.generate <*> Gen.elements [0..3]
 
-        let oneOrMore (parsersAndInputs : ParserAndSampleInput Gen) =
+        let oneOrMore (parsersAndInputs : TextParserAndSampleInput Gen) =
 
-            let makeOneOrMore (ParserAndSampleInput (parser, input)) (c : char) (n : int) =
+            let makeOneOrMore (TextParserAndSampleInput (parser, input)) (c : char) (n : int) =
                 let parser = TextParser.sequence (TextParser.character c) parser |> TextParser.oneOrMore
                 let input = sprintf "%c%s" c input |> String.replicate n
                 make parser input
 
             parsersAndInputs |> Gen.map makeOneOrMore <*> Arb.generate <*> Gen.elements [0..3]
 
-        let bind (parsersAndInputs : ParserAndSampleInput Gen) =
+        let bind (parsersAndInputs : TextParserAndSampleInput Gen) =
 
-            let makeBind (p1 : ParserAndSampleInput) (p2 : ParserAndSampleInput) =
+            let makeBind (p1 : TextParserAndSampleInput) (p2 : TextParserAndSampleInput) =
                 make (TextParser.bind (fun _ -> parser p2) (parser p1)) (input p1 + input p2)
 
             parsersAndInputs |> Gen.map makeBind <*> parsersAndInputs
 
-        let filter (parsersAndInputs : ParserAndSampleInput Gen) =
+        let filter (parsersAndInputs : TextParserAndSampleInput Gen) =
 
-            let makeFilter (ParserAndSampleInput (parser, input)) filter =
+            let makeFilter (TextParserAndSampleInput (parser, input)) filter =
                 make (TextParser.filter filter parser) input
 
             let filters =
@@ -110,9 +91,9 @@ module TestTextParserUtils =
 
             parsersAndInputs |> Gen.map makeFilter <*> filters
 
-        let delay (parsersAndInputs : ParserAndSampleInput Gen) =
+        let delay (parsersAndInputs : TextParserAndSampleInput Gen) =
 
-            let makeDelay (ParserAndSampleInput (parser, input)) =
+            let makeDelay (TextParserAndSampleInput (parser, input)) =
                 make (TextParser.delay (fun () -> parser)) input
 
             parsersAndInputs |> Gen.map makeDelay
@@ -202,3 +183,4 @@ module TestTextParserUtils =
         parsersAndInputsSized
         |> Gen.sized
         |> Arb.fromGen
+
