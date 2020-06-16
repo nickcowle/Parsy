@@ -18,23 +18,48 @@ module OptimisedTextParser =
 
     let sequence (p1 : Parser) (p2 : Parser) : Parser =
         fun sink ->
-            let p2Sink p1Parsed p2Parsed = StringSegment.extend p1Parsed p2Parsed.Length |> sink
-            p1 (fun p1Parsed -> p2 (p2Sink p1Parsed) p1Parsed)
+            let p2Parses = ResizeArray ()
+            let p1Sink parsed =
+                p2 p2Parses.Add parsed
+                for parsed2 in p2Parses do
+                    StringSegment.extend parsed parsed2.Length |> sink
+                p2Parses.Clear ()
+            p1 p1Sink
 
     let delay (f : unit -> Parser) : Parser =
         let parser = lazy f ()
         fun input -> parser.Value input
 
     let rec zeroOrMore (p : Parser) : Parser =
-        choice [ success ; delay (fun () -> oneOrMore p) ]
+        fun sink ->
+            let oneOrMore = oneOrMore p sink
+            fun input ->
+                let segment = input |> StringSegment.advance 0
+                sink segment
+                oneOrMore segment
 
     and oneOrMore (p : Parser) : Parser =
-        sequence p (zeroOrMore p)
+        fun sink ->
+            let parses = System.Collections.Generic.Queue ()
+            let nextParses = ResizeArray ()
+            fun input ->
+                p parses.Enqueue input
+                while parses.Count > 0 do
+                    let parse = parses.Dequeue ()
+                    sink parse
+                    p nextParses.Add parse
+                    for parse2 in nextParses do
+                        StringSegment.extend parse parse2.Length |> parses.Enqueue
+                    nextParses.Clear ()
 
     let bind (f : string -> Parser) (p1 : Parser) : Parser =
         fun sink ->
-            let p2Sink p1Parsed p2Parsed = StringSegment.extend p1Parsed p2Parsed.Length |> sink
-            let p1Sink p1Parsed = f (p1Parsed |> StringSegment.current) (p2Sink p1Parsed) p1Parsed
+            let p2Parses = ResizeArray ()
+            let p1Sink parsed =
+                f (parsed |> StringSegment.current) p2Parses.Add parsed
+                for parsed2 in p2Parses do
+                    StringSegment.extend parsed parsed2.Length |> sink
+                p2Parses.Clear ()
             p1 p1Sink
 
     let filter (f : string -> bool) (p : Parser) : Parser =
