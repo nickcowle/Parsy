@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="StringSegment.fsi" />
+    <Compile Include="StringSegment.fs" />
     <Compile Include="TextParser.fsi" />
     <Compile Include="TextParser.fs" />
     <Compile Include="TextParserUtils.fsi" />
