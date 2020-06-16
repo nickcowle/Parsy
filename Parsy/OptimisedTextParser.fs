@@ -26,11 +26,11 @@ module StringSegment =
             Length = amount
         }
 
+    let extend segment1 amount =
+        { segment1 with Length = segment1.Length + amount }
+
     let current segment =
         segment.Value.Substring(segment.Offset, segment.Length)
-
-    let consumed segment =
-        segment.Value.Substring(0, segment.Offset + segment.Length)
 
     let remaining segment =
         segment.Value.Substring(segment.Offset + segment.Length)
@@ -53,7 +53,9 @@ module OptimisedTextParser =
                 parser sink input
 
     let sequence (p1 : Parser) (p2 : Parser) : Parser =
-        fun sink -> p1 (p2 sink)
+        fun sink ->
+            let p2Sink p1Parsed p2Parsed = StringSegment.extend p1Parsed p2Parsed.Length |> sink
+            p1 (fun p1Parsed -> p2 (p2Sink p1Parsed) p1Parsed)
 
     let delay (f : unit -> Parser) : Parser =
         let parser = lazy f ()
@@ -65,10 +67,11 @@ module OptimisedTextParser =
     and oneOrMore (p : Parser) : Parser =
         sequence p (zeroOrMore p)
 
-    let bind (f : string -> Parser) (p : Parser) : Parser =
+    let bind (f : string -> Parser) (p1 : Parser) : Parser =
         fun sink ->
-            let sink input = f (input |> StringSegment.current) sink input
-            p sink
+            let p2Sink p1Parsed p2Parsed = StringSegment.extend p1Parsed p2Parsed.Length |> sink
+            let p1Sink p1Parsed = f (p1Parsed |> StringSegment.current) (p2Sink p1Parsed) p1Parsed
+            p1 p1Sink
 
     let filter (f : string -> bool) (p : Parser) : Parser =
         fun sink ->
