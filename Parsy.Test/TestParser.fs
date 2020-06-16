@@ -12,6 +12,7 @@ module TestParser =
     let allParserTypesMemberData =
         [
             ReferenceParser
+            OptimisedParser
         ]
         |> List.map (fun p -> [| box p |])
 

@@ -9,6 +9,7 @@ type TextParserType =
 
 type ParserType =
 | ReferenceParser
+| OptimisedParser
 
 [<RequireQualifiedAccess>]
 module TestUtils =
@@ -33,6 +34,13 @@ module TestUtils =
             fun parser input ->
                 ReferenceParser.make parser input
                 |> Set.ofList
+        | OptimisedParser ->
+            fun parser input ->
+                let parses = ResizeArray ()
+                OptimisedParser.make parser (fun a segment -> parses.Add (a, segment)) (StringSegment.ofString input)
+                parses
+                |> Seq.map (fun (a, segment) -> a, segment |> StringSegment.remaining)
+                |> Set.ofSeq
 
     let config =
         { Config.QuickThrowOnFailure with
