@@ -228,3 +228,12 @@ module TestParser =
             let input = input1 + input2 + input3
             p1 input = p2 input
         check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``mapping a parser is equivalent to mapping its parses`` (parserType : ParserType) =
+        let prop (ParserAndSampleInput (parser : int Parser, input)) (MappingFunction f) =
+            let actualParsed = makeParser parserType (Parser.map f parser) input
+            let expectedParsed = makeParser parserType parser input |> Set.map (fun (a, segment) -> f a, segment)
+            actualParsed = expectedParsed
+        check prop

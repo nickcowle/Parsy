@@ -15,6 +15,10 @@ type 'a CombinerFunction = CombinerFunction of ('a -> 'a -> 'a)
 [<NoComparison>]
 type 'a AssociativeCombinerFunction = AssociativeCombinerFunction of ('a -> 'a -> 'a)
 
+[<NoEquality>]
+[<NoComparison>]
+type 'a MappingFunction = MappingFunction of ('a -> 'a)
+
 [<RequireQualifiedAccess>]
 module ParserGenerator =
 
@@ -36,6 +40,18 @@ module ParserGenerator =
             (*)
         ]
         |> List.map AssociativeCombinerFunction
+        |> Gen.elements
+        |> Arb.fromGen
+
+    let intMappingFunctions : int MappingFunction Arbitrary =
+        [
+            fun i -> i + 10
+            fun i -> i - 5
+            fun i -> 0
+            fun i -> -3
+            fun i -> i % 13
+        ]
+        |> List.map MappingFunction
         |> Gen.elements
         |> Arb.fromGen
 
@@ -80,6 +96,13 @@ module ParserGenerator =
 
             makeSequence <!> Arb.generate <*> parsersAndInputs <*> parsersAndInputs
 
+        let map (parsersAndInputs : 'a ParserAndSampleInput Gen) =
+
+            let makeMap (MappingFunction f) (ParserAndSampleInput (parser, input)) =
+                make (Parser.map f parser) input
+
+            makeMap <!> Arb.generate <*> parsersAndInputs
+
         let rec parsersAndInputsSized n =
 
             let ifString =
@@ -104,6 +127,7 @@ module ParserGenerator =
                     [
                         choice parsersAndInputs
                         sequence parsersAndInputs
+                        map parsersAndInputs
                     ]
                 else
                     []
