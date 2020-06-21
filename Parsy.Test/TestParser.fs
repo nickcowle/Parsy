@@ -143,7 +143,7 @@ module TestParser =
                 actualParsed = expectedParsed
             | (parsed1, rest1)::_ ->
                 let parsed2 = makeParser parserType parser2 input2
-                let input = input1.Substring(0, input1.Length + input2.Length - rest1.Length) + input2
+                let input = (input1 + input2).Substring(0, input1.Length + input2.Length - rest1.Length) + input2
                 let actualParsed = makeParser parserType (Parser.sequence (+) parser1 parser2) input
                 let expectedParsed = parsed2 |> Set.map (fun (parsed, rest) -> parsed1 + parsed, rest)
                 expectedParsed |> Set.forall (fun expected -> actualParsed |> Set.contains expected)
