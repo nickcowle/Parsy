@@ -332,7 +332,7 @@ module TestTextParser =
     [<Fact>]
     let ``ReferenceTextParser and OptimisedTextParser return the same parses`` () =
         let prop (TextParserAndSampleInput (parser, input)) =
-            makeParser TextParserType.ReferenceTextParser parser input = makeParser TextParserType.ReferenceTextParser parser input
+            makeParser TextParserType.ReferenceTextParser parser input = makeParser TextParserType.OptimisedTextParser parser input
         check prop
 
     [<Fact>]
