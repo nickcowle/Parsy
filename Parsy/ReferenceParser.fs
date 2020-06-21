@@ -26,6 +26,12 @@ module ReferenceParser =
             let parsers = xs |> List.map f
             fun input -> parsers |> List.collect ((|>) input)
 
+        member __.Combine (p1 : 'a ParseFun, p2 : 'a ParseFun) : 'a ParseFun =
+            fun input -> p1 input @ p2 input
+
+        member __.Delay (f : unit -> 'a ParseFun) : 'a ParseFun =
+            f ()
+
     let parser = ParserBuilder ()
 
     let textParser (textParser : TextParser) : string ParseFun =
@@ -60,6 +66,49 @@ module ReferenceParser =
             yield f a
         }
 
+    let bind (f : 'a -> 'b ParseFun) (p : 'a ParseFun) : 'b ParseFun =
+        parser {
+            let! a = p
+            yield! f a
+        }
+
+    let rec zeroOrMore (s : 's) (f : 's -> 'a -> 's) (p : 'a ParseFun) : 's ParseFun =
+        parser {
+            yield s
+            let! a = p
+            yield! zeroOrMore (f s a) f p
+        }
+
+    let oneOrMore (s : 'a -> 's) (f : 's -> 'a -> 's) (p : 'a ParseFun) : 's ParseFun =
+        parser {
+            let! a = p
+            yield! zeroOrMore (s a) f p
+        }
+
+    let rec interleaveInner (s : 's) (f : 's -> 'b -> 'a -> 's) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 's ParseFun =
+        parser {
+            let! b = p2
+            let! a = p1
+            let s = f s b a
+            yield s
+            yield! interleaveInner s f p1 p2
+        }
+
+    let interleave (s : 'a -> 's) (f : 's -> 'b -> 'a -> 's) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 's ParseFun =
+        parser {
+            let! a = p1
+            let s = s a
+            yield s
+            yield! interleaveInner s f p1 p2
+        }
+
+    let interleave1 (s : 'a -> 'b -> 'a -> 's) (f : 's -> 'b -> 'a -> 's) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 's ParseFun =
+        parser {
+            let! a = p1
+            let! b = p2
+            yield! interleave (s a b) f p1 p2
+        }
+
     let cong (teq : Teq<'a, 'b>) : Teq<'a ParseFun, 'b ParseFun> =
         Teq.Cong.believeMe teq
 
@@ -82,4 +131,29 @@ module ReferenceParser =
             crate.Apply
                 { new ParserMapEval<_,_> with
                     member __.Eval f p = map f (make p)
+                }
+        | Bind crate ->
+            crate.Apply
+                { new ParserBindEval<_,_> with
+                    member __.Eval f p = bind (f >> make) (make p)
+                }
+        | ZeroOrMore crate ->
+            crate.Apply
+                { new ParserZeroOrMoreEval<_,_> with
+                    member __.Eval s f p = zeroOrMore s f (make p)
+                }
+        | OneOrMore crate ->
+            crate.Apply
+                { new ParserOneOrMoreEval<_,_> with
+                    member __.Eval s f p = oneOrMore s f (make p)
+                }
+        | Interleave crate ->
+            crate.Apply
+                { new ParserInterleaveEval<_,_> with
+                    member __.Eval s f p1 p2 = interleave s f (make p1) (make p2)
+                }
+        | Interleave1 crate ->
+            crate.Apply
+                { new ParserInterleave1Eval<_,_> with
+                    member __.Eval s f p1 p2 = interleave1 s f (make p1) (make p2)
                 }

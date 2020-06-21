@@ -103,6 +103,88 @@ module ParserGenerator =
 
             makeMap <!> Arb.generate <*> parsersAndInputs
 
+        let bind (parsersAndInputs : 'a ParserAndSampleInput Gen) =
+
+            let makeBind (p1 : 'a ParserAndSampleInput) (p2 : 'a ParserAndSampleInput) =
+                make (Parser.bind (fun _ -> parser p2) (parser p1)) (input p1 + input p2)
+
+            parsersAndInputs |> Gen.map makeBind <*> parsersAndInputs
+
+        let prefixWithDummyChar (c : char) (parser : 'a Parser) : 'a Parser =
+            let dummyChar = TextParser.character c |> Parser.ofTextParser
+            Parser.sequence (fun _ -> id) dummyChar parser
+
+        let zeroOrMore (parsersAndInputs : 'a ParserAndSampleInput Gen) =
+
+            let makeZeroOrMore
+                (ParserAndSampleInput (parser, input)) (c : char) (n : int)
+                (CombinerFunction f) (s : 'a) =
+                // N.B. we need to introduce a dummy character here because any parser
+                // that parses the empty input will cause an infinite loop when nested
+                // inside zeroOrMore
+                let parser = prefixWithDummyChar c parser
+                let parser = Parser.zeroOrMore s f parser
+                let input = sprintf "%c%s" c input |> String.replicate n
+                make parser input
+
+            parsersAndInputs |> Gen.map makeZeroOrMore <*> Arb.generate <*> Gen.elements [0..3] <*> Arb.generate <*> Arb.generate
+
+        let oneOrMore (parsersAndInputs : 'a ParserAndSampleInput Gen) =
+
+            let makeOneOrMore
+                (ParserAndSampleInput (parser, input)) (c : char) (n : int)
+                (CombinerFunction f) (MappingFunction s) =
+                // N.B. we need to introduce a dummy character here because any parser
+                // that parses the empty input will cause an infinite loop when nested
+                // inside oneOrMore
+                let parser = prefixWithDummyChar c parser
+                let parser = Parser.oneOrMore s f parser
+                let input = sprintf "%c%s" c input |> String.replicate n
+                make parser input
+
+            parsersAndInputs |> Gen.map makeOneOrMore <*> Arb.generate <*> Gen.elements [0..3] <*> Arb.generate <*> Arb.generate
+
+        let interleave (parsersAndInputs : 'a ParserAndSampleInput Gen) =
+
+            let makeInterleave
+                (ParserAndSampleInput (parser1, input1))
+                (ParserAndSampleInput (parser2, input2))
+                (CombinerFunction f) (CombinerFunction g)
+                (MappingFunction s)
+                (c : char) (n : int) =
+                let parser1 = prefixWithDummyChar c parser1
+                let parser = Parser.interleave s (fun s b a -> g (f s b) a) parser1 parser2
+                let input =
+                    let input1 = sprintf "%c%s" c input1
+                    sprintf "%s%s" input1 (sprintf "%s%s" input2 input2 |> String.replicate n)
+                make parser input
+
+            parsersAndInputs
+            |> Gen.map makeInterleave
+            <*> parsersAndInputs
+            <*> Arb.generate <*> Arb.generate <*> Arb.generate <*> Arb.generate
+            <*> Gen.elements [0..3]
+
+        let interleave1 (parsersAndInputs : 'a ParserAndSampleInput Gen) =
+
+            let makeInterleave
+                (ParserAndSampleInput (parser1, input1))
+                (ParserAndSampleInput (parser2, input2))
+                (CombinerFunction f) (CombinerFunction g)
+                (c : char) (n : int) =
+                let parser1 = prefixWithDummyChar c parser1
+                let parser = Parser.interleave1 (fun a1 b a2 -> g (f a1 b) a2) (fun s b a -> g (f s b) a) parser1 parser2
+                let input =
+                    let input1 = sprintf "%c%s" c input1
+                    sprintf "%s%s" input1 (sprintf "%s%s" input2 input2 |> String.replicate n)
+                make parser input
+
+            parsersAndInputs
+            |> Gen.map makeInterleave
+            <*> parsersAndInputs
+            <*> Arb.generate <*> Arb.generate <*> Arb.generate
+            <*> Gen.elements [0..3]
+
         let rec parsersAndInputsSized n =
 
             let ifString =
@@ -128,6 +210,11 @@ module ParserGenerator =
                         choice parsersAndInputs
                         sequence parsersAndInputs
                         map parsersAndInputs
+                        bind parsersAndInputs
+                        zeroOrMore parsersAndInputs
+                        oneOrMore parsersAndInputs
+                        interleave parsersAndInputs
+                        interleave1 parsersAndInputs
                     ]
                 else
                     []

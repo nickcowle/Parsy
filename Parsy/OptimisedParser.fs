@@ -36,6 +36,51 @@ module OptimisedParser =
             let sink a segment = sink (f a) segment
             p sink
 
+    let bind (f : 'a -> 'b ParseFun) (p : 'a ParseFun) : 'b ParseFun =
+        fun sink ->
+            fun input ->
+                let sink a segment1 = f a (fun b segment2 -> sink b (segment1 |> StringSegment.extend segment2.Length)) segment1
+                p sink input
+
+    let rec zeroOrMore (s : 's) (f : 's -> 'a -> 's) (p : 'a ParseFun) : 's ParseFun =
+        fun sink ->
+            let parses = System.Collections.Generic.Queue ()
+            fun input ->
+                parses.Enqueue struct (s, input |> StringSegment.advance 0)
+                while parses.Count > 0 do
+                    let struct (s, segment) = parses.Dequeue ()
+                    sink s segment
+                    p (fun a segment2 -> parses.Enqueue struct (f s a, segment |> StringSegment.extend segment2.Length)) segment
+
+    and oneOrMore (s : 'a -> 's) (f : 's -> 'a -> 's) (p : 'a ParseFun) : 's ParseFun =
+        fun sink ->
+            let parses = System.Collections.Generic.Queue ()
+            fun input ->
+                p (fun a segment -> parses.Enqueue struct (s a, segment)) input
+                while parses.Count > 0 do
+                    let struct (s, segment) = parses.Dequeue ()
+                    sink s segment
+                    p (fun a segment2 -> parses.Enqueue struct (f s a, segment |> StringSegment.extend segment2.Length)) segment
+
+    let interleave (s : 'a -> 's) (f : 's -> 'b -> 'a -> 's) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 's ParseFun =
+        fun sink ->
+            let rec p1Sink s allSoFarSegment =
+                sink s allSoFarSegment
+                let p2Sink b p2Segment =
+                    p1 (fun a p1Segment -> p1Sink (f s b a) (allSoFarSegment |> StringSegment.extend (p1Segment.Length + p2Segment.Length))) p2Segment
+                p2 p2Sink allSoFarSegment
+            fun input ->
+                p1 (fun a -> p1Sink (s a)) input
+
+    let interleave1 (s : 'a -> 'b -> 'a -> 's) (f : 's -> 'b -> 'a -> 's) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 's ParseFun =
+        fun sink ->
+            let rec p1Sink s allSoFarSegment =
+                sink s allSoFarSegment
+                let p2Sink b p2Segment = p1 (fun a p1Segment -> p1Sink (f s b a) (allSoFarSegment |> StringSegment.extend (p1Segment.Length + p2Segment.Length))) p2Segment
+                p2 p2Sink allSoFarSegment
+            fun input ->
+                p1 (fun a1 p1Segment -> p2 (fun b p2Segment -> p1 (fun a2 p1Segment2 -> p1Sink (s a1 b a2) (p1Segment |> StringSegment.extend (p2Segment.Length + p1Segment2.Length))) p2Segment) p1Segment) input
+
     let cong (teq : Teq<'a, 'b>) : Teq<'a ParseFun, 'b ParseFun> =
         Teq.Cong.believeMe teq
 
@@ -58,4 +103,29 @@ module OptimisedParser =
             crate.Apply
                 { new ParserMapEval<_,_> with
                     member __.Eval f p = map f (make p)
+                }
+        | Bind crate ->
+            crate.Apply
+                { new ParserBindEval<_,_> with
+                    member __.Eval f p = bind (f >> make) (make p)
+                }
+        | ZeroOrMore crate ->
+            crate.Apply
+                { new ParserZeroOrMoreEval<_,_> with
+                    member __.Eval s f p = zeroOrMore s f (make p)
+                }
+        | OneOrMore crate ->
+            crate.Apply
+                { new ParserOneOrMoreEval<_,_> with
+                    member __.Eval s f p = oneOrMore s f (make p)
+                }
+        | Interleave crate ->
+            crate.Apply
+                { new ParserInterleaveEval<_,_> with
+                    member __.Eval s f p1 p2 = interleave s f (make p1) (make p2)
+                }
+        | Interleave1 crate ->
+            crate.Apply
+                { new ParserInterleave1Eval<_,_> with
+                    member __.Eval s f p1 p2 = interleave1 s f (make p1) (make p2)
                 }

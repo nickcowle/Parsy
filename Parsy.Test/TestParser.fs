@@ -237,3 +237,85 @@ module TestParser =
             let expectedParsed = makeParser parserType parser input |> Set.map (fun (a, segment) -> f a, segment)
             actualParsed = expectedParsed
         check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``bind behaves in the same way as sequence, for a fixed second parser`` (parserType : ParserType) =
+        let prop (ParserAndSampleInput (parser1 : int Parser, input1)) (ParserAndSampleInput (parser2 : int Parser, input2)) =
+            let input = input1 + input2
+            let actualParsed = makeParser parserType (Parser.bind (fun _ -> parser2) parser1) input
+            let expectedParsed = makeParser parserType (Parser.sequence (fun _ b -> b) parser1 parser2) input
+            actualParsed = expectedParsed
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``zeroOrMore returns all n+1 possible parses when parsing a string repeated n times`` (parserType : ParserType) =
+        let prop (NonEmptyString s) (SmallInt n) =
+            let parser = TextParser.string s |> Parser.ofTextParser |> Parser.zeroOrMore "" (+) |> makeParser parserType
+            let input = String.replicate n s
+            let expectedParsed = [0..n] |> List.map (fun i -> String.replicate i s, String.replicate (n - i) s) |> Set.ofSeq
+            let actualParsed = parser input
+            actualParsed = expectedParsed
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``zeroOrMore fail is equivalent to success`` (parserType : ParserType) =
+        let prop (NonNull input) (i : int) =
+            let expectedParser = Parser.success i |> makeParser parserType
+            let ignored _ = failwith "should never be called"
+            let actualParser = Parser.zeroOrMore i ignored Parser.fail |> makeParser parserType
+            expectedParser input = actualParser input
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``oneOrMore returns all n possible parses when parsing a string repeated n times`` (parserType : ParserType) =
+        let prop (NonEmptyString s) (SmallInt n) =
+            let parser = TextParser.string s |> Parser.ofTextParser |> Parser.oneOrMore id (+) |> makeParser parserType
+            let input = String.replicate n s
+            let expectedParsed = [1..n] |> List.map (fun i -> String.replicate i s, String.replicate (n - i) s) |> Set.ofSeq
+            let actualParsed = parser input
+            actualParsed = expectedParsed
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``oneOrMore fail is equivalent to fail`` (parserType : ParserType) =
+        let prop (NonNull input) =
+            let expectedParser = Parser.fail |> makeParser parserType
+            let ignored _ = failwith "should never be called"
+            let actualParser = Parser.oneOrMore ignored ignored Parser.fail |> makeParser parserType
+            expectedParser input = actualParser input
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``interleave returns all n+1 possible parses when parsing two strings repeated n times`` (parserType : ParserType) =
+        let prop (NonEmptyString s1) (NonEmptyString s2) (SmallInt n) =
+            let string = TextParser.string >> Parser.ofTextParser
+            let parser = Parser.interleave id (fun s s2 s1 -> s + s2 + s1) (string s1) (string s2) |> makeParser parserType
+            let tail n = sprintf "%s%s" s2 s1 |> String.replicate n
+            let head s = sprintf "%s%s" s1 s
+            let input = head (tail n)
+            let expectedParse i = head (tail i), tail (n - i)
+            let expectedParsed = [0..n] |> List.map expectedParse |> Set.ofSeq
+            let actualParsed = parser input
+            actualParsed = expectedParsed
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``interleave1 returns all n possible parses when parsing two strings repeated n times`` (parserType : ParserType) =
+        let prop (NonEmptyString s1) (NonEmptyString s2) (SmallInt n) =
+            let string = TextParser.string >> Parser.ofTextParser
+            let parser = Parser.interleave1 (fun s11 s2 s12 -> s11 + s2 + s12) (fun s s2 s1 -> s + s2 + s1) (string s1) (string s2) |> makeParser parserType
+            let tail n = sprintf "%s%s" s2 s1 |> String.replicate n
+            let head s = sprintf "%s%s" s1 s
+            let input = head (tail n)
+            let expectedParse i = head (tail i), tail (n - i)
+            let expectedParsed = [1..n] |> List.map expectedParse |> Set.ofSeq
+            let actualParsed = parser input
+            actualParsed = expectedParsed
+        check prop
