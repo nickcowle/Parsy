@@ -210,7 +210,7 @@ module TestTextParser =
     [<Theory>]
     [<MemberData(allParserTypes)>]
     let ``zeroOrMore returns all n+1 possible parses when parsing a string repeated n times`` (parserType : TextParserType) =
-        let prop (NonEmptyString s) (NonNegativeInt n) =
+        let prop (NonEmptyString s) (SmallInt n) =
             let parser = TextParser.string s |> TextParser.zeroOrMore |> makeParser parserType
             let input = String.replicate n s
             let expectedParsed = [0..n] |> List.map (fun i -> String.replicate i s, String.replicate (n - i) s) |> Set.ofSeq
@@ -230,7 +230,7 @@ module TestTextParser =
     [<Theory>]
     [<MemberData(allParserTypes)>]
     let ``oneOrMore returns all n possible parses when parsing a string repeated n times`` (parserType : TextParserType) =
-        let prop (NonEmptyString s) (NonNegativeInt n) =
+        let prop (NonEmptyString s) (SmallInt n) =
             let parser = TextParser.string s |> TextParser.oneOrMore |> makeParser parserType
             let input = String.replicate n s
             let expectedParsed = [1..n] |> List.map (fun i -> String.replicate i s, String.replicate (n - i) s) |> Set.ofSeq

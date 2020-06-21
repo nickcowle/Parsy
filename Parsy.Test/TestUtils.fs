@@ -11,8 +11,12 @@ type ParserType =
 | ReferenceParser
 | OptimisedParser
 
+type SmallInt = SmallInt of int
+
 [<RequireQualifiedAccess>]
 module TestUtils =
+
+    type Marker = Marker
 
     let makeTextParser =
         function
@@ -42,10 +46,14 @@ module TestUtils =
                 |> Seq.map (fun (a, segment) -> a, segment |> StringSegment.remaining)
                 |> Set.ofSeq
 
+    let smallInts : SmallInt Arbitrary =
+        [0..5] |> List.map SmallInt |> Gen.elements |> Arb.fromGen
+
     let config =
         { Config.QuickThrowOnFailure with
             Arbitrary =
                 [
+                typeof<Marker>.DeclaringType
                 typeof<TextParserGenerator.Marker>.DeclaringType
                 typeof<ParserGenerator.Marker>.DeclaringType
                 ]
