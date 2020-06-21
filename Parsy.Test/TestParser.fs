@@ -319,3 +319,34 @@ module TestParser =
             let actualParsed = parser input
             actualParsed = expectedParsed
         check prop
+
+    [<Fact>]
+    let ``ReferenceParser and OptimisedParser return the same parses`` () =
+        let prop (ParserAndSampleInput (parser : int Parser, input)) =
+            makeParser ParserType.ReferenceParser parser input = makeParser ParserType.OptimisedParser parser input
+        check prop
+
+    [<Fact>]
+    let ``All parses of OptimisedParser are initial segments of the input`` () =
+        let prop (ParserAndSampleInput (parser : int Parser, input)) =
+            let parses = ResizeArray ()
+            let segment = input |> StringSegment.ofString
+            OptimisedParser.make parser (fun _ -> parses.Add) segment
+            parses |> Seq.forall (fun segment -> segment.Offset = 0)
+        check prop
+
+    [<Fact>]
+    let ``OptimisedParser can begin parsing from the middle of a StringSegment correctly`` () =
+        let prop (ParserAndSampleInput (parser : int Parser, input)) (NonNull s) =
+
+            let parse segment =
+                let parses = ResizeArray ()
+                OptimisedParser.make parser (fun _ -> parses.Add) segment
+                parses
+                |> Seq.map (fun segment -> segment |> StringSegment.current, segment |> StringSegment.remaining)
+                |> Set.ofSeq
+
+            let expected = input |> StringSegment.ofString |> parse
+            let actual = (s + input) |> StringSegment.ofString |> StringSegment.advance s.Length |> parse
+            expected = actual
+        check prop
