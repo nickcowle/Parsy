@@ -26,8 +26,9 @@ module OptimisedParser =
 
     let sequence (f : 'a -> 'b -> 'c) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 'c ParseFun =
         fun sink ->
-            let p2Sink a b segment = sink (f a b) segment
-            let p1Sink a segment = p2 (p2Sink a) segment
+            let p1Sink a segment =
+                let p2Sink a b segment2 = sink (f a b) (segment |> StringSegment.extend segment2.Length)
+                p2 (p2Sink a) segment
             p1 p1Sink
 
     let map (f : 'a -> 'b) (p : 'a ParseFun) : 'b ParseFun =
