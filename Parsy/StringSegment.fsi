@@ -16,7 +16,7 @@ module StringSegment =
 
     val advance : int -> StringSegment -> StringSegment
 
-    val extend : StringSegment -> int -> StringSegment
+    val extend : int -> StringSegment -> StringSegment
 
     val current : StringSegment -> string
 

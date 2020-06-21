@@ -26,7 +26,7 @@ module StringSegment =
             Length = amount
         }
 
-    let extend segment1 amount =
+    let extend amount segment1 =
         { segment1 with Length = segment1.Length + amount }
 
     let current segment =

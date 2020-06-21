@@ -22,7 +22,7 @@ module OptimisedTextParser =
             let p1Sink parsed =
                 p2 p2Parses.Add parsed
                 for parsed2 in p2Parses do
-                    StringSegment.extend parsed parsed2.Length |> sink
+                    parsed |> StringSegment.extend parsed2.Length |> sink
                 p2Parses.Clear ()
             p1 p1Sink
 
@@ -49,7 +49,7 @@ module OptimisedTextParser =
                     sink parse
                     p nextParses.Add parse
                     for parse2 in nextParses do
-                        StringSegment.extend parse parse2.Length |> parses.Enqueue
+                        parse |> StringSegment.extend parse2.Length |> parses.Enqueue
                     nextParses.Clear ()
 
     let bind (f : string -> Parser) (p1 : Parser) : Parser =
@@ -58,7 +58,7 @@ module OptimisedTextParser =
             let p1Sink parsed =
                 f (parsed |> StringSegment.current) p2Parses.Add parsed
                 for parsed2 in p2Parses do
-                    StringSegment.extend parsed parsed2.Length |> sink
+                    parsed |> StringSegment.extend parsed2.Length |> sink
                 p2Parses.Clear ()
             p1 p1Sink
 
