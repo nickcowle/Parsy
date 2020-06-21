@@ -24,6 +24,7 @@
     <Compile Include="Parser.fs" />
     <Compile Include="ReferenceParser.fsi" />
     <Compile Include="ReferenceParser.fs" />
+    <Compile Include="OptimisedParser.fsi" />
     <Compile Include="OptimisedParser.fs" />
   </ItemGroup>
 
