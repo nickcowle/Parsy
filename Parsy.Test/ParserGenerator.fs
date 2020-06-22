@@ -19,6 +19,10 @@ type 'a AssociativeCombinerFunction = AssociativeCombinerFunction of ('a -> 'a -
 [<NoComparison>]
 type 'a MappingFunction = MappingFunction of ('a -> 'a)
 
+[<NoEquality>]
+[<NoComparison>]
+type 'a FilterFunction = FilterFunction of ('a -> bool)
+
 [<RequireQualifiedAccess>]
 module ParserGenerator =
 
@@ -52,6 +56,19 @@ module ParserGenerator =
             fun i -> i % 13
         ]
         |> List.map MappingFunction
+        |> Gen.elements
+        |> Arb.fromGen
+
+    let intFilterFunctions : int FilterFunction Arbitrary =
+        [
+            fun _ -> true
+            fun _ -> false
+            fun i -> i >= 0
+            fun i -> i < 0
+            fun i -> i % 2 = 0
+            fun i -> i % 2 = 1
+        ]
+        |> List.map FilterFunction
         |> Gen.elements
         |> Arb.fromGen
 
@@ -193,6 +210,15 @@ module ParserGenerator =
             parsersAndInputs
             |> Gen.map makeIgnore
 
+        let filter (parsersAndInputs : 'a ParserAndSampleInput Gen) =
+
+            let makeFilter (ParserAndSampleInput (parser, input)) (FilterFunction f) =
+                make (Parser.filter f parser) input
+
+            parsersAndInputs
+            |> Gen.map makeFilter
+            <*> Arb.generate
+
         let rec parsersAndInputsSized n =
 
             [
@@ -216,6 +242,7 @@ module ParserGenerator =
                     yield oneOrMore parsersAndInputs
                     yield interleave parsersAndInputs
                     yield interleave1 parsersAndInputs
+                    yield filter parsersAndInputs
             ]
             |> Gen.oneof
 

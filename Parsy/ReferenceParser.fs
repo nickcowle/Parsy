@@ -115,6 +115,12 @@ module ReferenceParser =
             yield ()
         }
 
+    let filter (f : 'a -> bool) (p : 'a ParseFun) : 'a ParseFun =
+        parser {
+            let! a = p
+            if f a then yield a
+        }
+
     let cong (teq : Teq<'a, 'b>) : Teq<'a ParseFun, 'b ParseFun> =
         Teq.Cong.believeMe teq
 
@@ -168,3 +174,5 @@ module ReferenceParser =
                 { new ParserEval<_> with
                     member __.Eval p = ignore (make p) |> Teq.castFrom (cong teq)
                 }
+        | Filter (f, p) ->
+            filter f (make p)

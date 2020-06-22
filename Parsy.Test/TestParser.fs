@@ -341,6 +341,15 @@ module TestParser =
             actualParsed = expectedParsed
         check prop
 
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``filtering a parser is equivalent to filtering its parses`` (parserType : ParserType) =
+        let prop (ParserAndSampleInput (parser : int Parser, input)) (FilterFunction f) =
+            let actualParsed = makeParser parserType (Parser.filter f parser) input
+            let expectedParsed = makeParser parserType parser input |> Set.filter (fst >> f)
+            actualParsed = expectedParsed
+        check prop
+
     [<Fact>]
     let ``ReferenceParser and OptimisedParser return the same parses`` () =
         let prop (ParserAndSampleInput (parser : int Parser, input)) =

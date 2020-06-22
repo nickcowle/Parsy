@@ -147,6 +147,11 @@ module OptimisedParser =
             let sink _ parsed = sink () parsed
             p sink
 
+    let filter (f : 'a -> bool) (p : 'a ParseFun) : 'a ParseFun =
+        fun sink ->
+            let sink a parsed = if f a then sink a parsed
+            p sink
+
     let cong (teq : Teq<'a, 'b>) : Teq<'a ParseFun, 'b ParseFun> =
         Teq.Cong.believeMe teq
 
@@ -200,3 +205,5 @@ module OptimisedParser =
                 { new ParserEval<_> with
                     member __.Eval p = ignore (make p) |> Teq.castFrom (cong teq)
                 }
+        | Filter (f, p) ->
+            filter f (make p)
