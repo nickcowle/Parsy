@@ -186,40 +186,24 @@ module ParserGenerator =
             <*> Gen.elements [0..3]
 
         let rec parsersAndInputsSized n =
-
-            let ifString =
+            [
                 if typeof<'a> = typeof<string> then
-                    [
-                        textParser |> unbox
-                    ]
-                else
-                    []
+                    yield textParser |> unbox
 
-            let small =
-                [
-                    success
-                    fail
-                ]
+                yield success
+                yield fail
 
-            let large =
-                if n > 0  then
-
+                if n > 0 then
                     let parsersAndInputs = parsersAndInputsSized (n - 1)
-
-                    [
-                        choice parsersAndInputs
-                        sequence parsersAndInputs
-                        map parsersAndInputs
-                        bind parsersAndInputs
-                        zeroOrMore parsersAndInputs
-                        oneOrMore parsersAndInputs
-                        interleave parsersAndInputs
-                        interleave1 parsersAndInputs
-                    ]
-                else
-                    []
-
-            ifString @ small @ large
+                    yield choice parsersAndInputs
+                    yield sequence parsersAndInputs
+                    yield map parsersAndInputs
+                    yield bind parsersAndInputs
+                    yield zeroOrMore parsersAndInputs
+                    yield oneOrMore parsersAndInputs
+                    yield interleave parsersAndInputs
+                    yield interleave1 parsersAndInputs
+            ]
             |> Gen.oneof
 
         parsersAndInputsSized

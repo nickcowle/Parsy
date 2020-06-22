@@ -153,42 +153,27 @@ module TextParserGenerator =
             |> Gen.oneof
 
         let rec parsersAndInputsSized n =
+            [
+                yield success
+                yield fail
+                yield character
+                yield string
+                yield letter
+                yield digit
+                yield letterOrDigit
+                yield newLine
 
-            match n with
-            | 0 ->
-                [
-                    success
-                    fail
-                    character
-                    string
-                    letter
-                    digit
-                    letterOrDigit
-                    newLine
-                ]
-                |> Gen.oneof
-            | _ ->
-
-                let parsersAndInputs = parsersAndInputsSized (n - 1)
-
-                [
-                    success
-                    fail
-                    choice     parsersAndInputs
-                    sequence   parsersAndInputs
-                    zeroOrMore parsersAndInputs
-                    oneOrMore  parsersAndInputs
-                    bind       parsersAndInputs
-                    filter     parsersAndInputs
-                    delay      parsersAndInputs
-                    character
-                    string
-                    letter
-                    digit
-                    letterOrDigit
-                    newLine
-                ]
-                |> Gen.oneof
+                if n > 0 then
+                    let parsersAndInputs = parsersAndInputsSized (n - 1)
+                    yield choice     parsersAndInputs
+                    yield sequence   parsersAndInputs
+                    yield zeroOrMore parsersAndInputs
+                    yield oneOrMore  parsersAndInputs
+                    yield bind       parsersAndInputs
+                    yield filter     parsersAndInputs
+                    yield delay      parsersAndInputs
+            ]
+            |> Gen.oneof
 
         parsersAndInputsSized
         |> Gen.sized
