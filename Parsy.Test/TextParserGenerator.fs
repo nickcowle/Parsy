@@ -1,19 +1,31 @@
 ﻿namespace Parsy.Test
 
-
 open FsCheck
 open Parsy
-
 
 [<NoEquality>]
 [<NoComparison>]
 type TextParserAndSampleInput = TextParserAndSampleInput of TextParser * string
 
+[<NoEquality>]
+[<NoComparison>]
+type TextFilterFunction = TextFilterFunction of (string -> bool)
 
 [<RequireQualifiedAccess>]
 module TextParserGenerator =
 
     type Marker = Marker
+
+    let textFilterFunctions : TextFilterFunction Arbitrary =
+        [
+            fun _ -> true
+            fun _ -> false
+            fun (s : string) -> s.Length % 2 = 0
+            fun (s : string) -> s.Length % 2 = 1
+        ]
+        |> List.map TextFilterFunction
+        |> Gen.elements
+        |> Arb.fromGen
 
     let parsersAndInputs : Arbitrary<TextParserAndSampleInput> =
 
@@ -77,19 +89,10 @@ module TextParserGenerator =
 
         let filter (parsersAndInputs : TextParserAndSampleInput Gen) =
 
-            let makeFilter (TextParserAndSampleInput (parser, input)) filter =
+            let makeFilter (TextParserAndSampleInput (parser, input)) (TextFilterFunction filter) =
                 make (TextParser.filter filter parser) input
 
-            let filters =
-                [
-                    fun _ -> true
-                    fun _ -> false
-                    fun (s : string) -> s.Length % 2 = 0
-                    fun (s : string) -> s.Length % 2 = 1
-                ]
-                |> Gen.elements
-
-            parsersAndInputs |> Gen.map makeFilter <*> filters
+            parsersAndInputs |> Gen.map makeFilter <*> Arb.generate
 
         let delay (parsersAndInputs : TextParserAndSampleInput Gen) =
 

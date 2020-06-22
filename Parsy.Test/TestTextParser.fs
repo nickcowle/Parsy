@@ -259,6 +259,15 @@ module TestTextParser =
 
     [<Theory>]
     [<MemberData(allParserTypes)>]
+    let ``filtering a parser is equivalent to filtering its parses`` (parserType : TextParserType) =
+        let prop (TextParserAndSampleInput (parser, input)) (TextFilterFunction f) =
+            let actualParsed = makeParser parserType (TextParser.filter f parser) input
+            let expectedParsed = makeParser parserType parser input |> Set.filter (fst >> f)
+            actualParsed = expectedParsed
+        check prop
+
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
     let ``a delayed parser behaves exactly the same as the parser itself`` (parserType : TextParserType) =
         let prop (TextParserAndSampleInput (parser, input)) =
             let actualParsed = makeParser parserType (TextParser.delay (fun () -> parser)) input
