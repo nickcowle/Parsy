@@ -22,9 +22,10 @@ module OptimisedParser =
 
     let choice (parsers : 'a ParseFun list) : 'a ParseFun =
         fun sink ->
+            let parsers = parsers |> List.map ((|>) sink)
             fun input ->
                 for parser in parsers do
-                    parser sink input
+                    parser input
 
     let sequence (f : 'a -> 'b -> 'c) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 'c ParseFun =
         fun sink ->
