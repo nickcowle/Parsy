@@ -14,10 +14,6 @@ module StringSegment =
 
     val make : string -> int -> int -> StringSegment
 
-    val ofString : string -> StringSegment
-
-    val advance : int -> StringSegment -> StringSegment
-
     val extend : int -> StringSegment -> StringSegment
 
     val current : StringSegment -> string

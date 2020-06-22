@@ -19,20 +19,6 @@ module StringSegment =
             Length = length
         }
 
-    let ofString s =
-        {
-            Value = s
-            Offset = 0
-            Length = 0
-        }
-
-    let advance amount segment =
-        {
-            Value = segment.Value
-            Offset = segment.Offset + segment.Length
-            Length = amount
-        }
-
     let extend amount segment1 =
         { segment1 with Length = segment1.Length + amount }
 
