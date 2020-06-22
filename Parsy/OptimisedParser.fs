@@ -9,7 +9,9 @@ module OptimisedParser =
 
     let textParser (textParser : TextParser) : string ParseFun =
         let textParser = textParser |> TextParserReducer.reduce
-        fun sink -> OptimisedTextParser.make textParser (fun segment -> sink (segment |> StringSegment.current) segment)
+        fun sink ->
+            let parser = OptimisedTextParser.make textParser (fun segment -> sink (segment |> StringSegment.current) segment)
+            fun segment -> parser segment.Value (segment.Offset + segment.Length)
 
     let success (a : 'a) : 'a ParseFun =
         fun sink input ->

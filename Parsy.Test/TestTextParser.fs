@@ -339,8 +339,7 @@ module TestTextParser =
     let ``All parses of OptimisedTextParser are initial segments of the input`` () =
         let prop (TextParserAndSampleInput (parser, input)) =
             let parses = ResizeArray ()
-            let segment = input |> StringSegment.ofString
-            OptimisedTextParser.make parser parses.Add segment
+            OptimisedTextParser.make parser parses.Add input 0
             parses |> Seq.forall (fun segment -> segment.Offset = 0)
         check prop
 
@@ -348,14 +347,14 @@ module TestTextParser =
     let ``OptimisedTextParser can begin parsing from the middle of a StringSegment correctly`` () =
         let prop (TextParserAndSampleInput (parser, input)) (NonNull s) =
 
-            let parse segment =
+            let parse input offset =
                 let parses = ResizeArray ()
-                OptimisedTextParser.make parser parses.Add segment
+                OptimisedTextParser.make parser parses.Add input offset
                 parses
                 |> Seq.map (fun segment -> segment |> StringSegment.current, segment |> StringSegment.remaining)
                 |> Set.ofSeq
 
-            let expected = input |> StringSegment.ofString |> parse
-            let actual = (s + input) |> StringSegment.ofString |> StringSegment.advance s.Length |> parse
+            let expected = parse input 0
+            let actual = parse (s + input) s.Length
             expected = actual
         check prop

@@ -12,6 +12,8 @@ type StringSegment =
 [<RequireQualifiedAccess>]
 module StringSegment =
 
+    val make : string -> int -> int -> StringSegment
+
     val ofString : string -> StringSegment
 
     val advance : int -> StringSegment -> StringSegment

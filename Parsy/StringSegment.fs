@@ -12,6 +12,13 @@ type StringSegment =
 [<RequireQualifiedAccess>]
 module StringSegment =
 
+    let make s offset length =
+        {
+            Value = s
+            Offset = offset
+            Length = length
+        }
+
     let ofString s =
         {
             Value = s
