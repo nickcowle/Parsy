@@ -119,3 +119,5 @@ module Parser =
                 member __.Apply e = e.Eval p
             }
         Ignore (crate, Teq.refl)
+
+    let optional p = choice [ success None ; map Some p ]

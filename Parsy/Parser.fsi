@@ -70,3 +70,5 @@ module Parser =
     val interleave1 : ('a -> 'b -> 'a -> 's) -> ('s -> 'b -> 'a -> 's) -> 'a Parser -> 'b Parser -> 's Parser
 
     val ignore : 'a Parser -> unit Parser
+
+    val optional : 'a Parser -> 'a option Parser

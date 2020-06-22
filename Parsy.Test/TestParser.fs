@@ -329,6 +329,18 @@ module TestParser =
             actualParsed = expectedParsed
         check prop
 
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``optional parsing is equivalent to success or parsing`` (parserType : ParserType) =
+        let prop (ParserAndSampleInput (parser : int Parser, input)) =
+            let actualParsed = makeParser parserType (Parser.optional parser) input
+            let expectedParsed =
+                makeParser parserType parser input
+                |> Set.map (fun (a, rest) -> Some a, rest)
+                |> Set.add (None, input)
+            actualParsed = expectedParsed
+        check prop
+
     [<Fact>]
     let ``ReferenceParser and OptimisedParser return the same parses`` () =
         let prop (ParserAndSampleInput (parser : int Parser, input)) =
