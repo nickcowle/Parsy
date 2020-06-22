@@ -17,6 +17,7 @@ type 'a Parser =
     | OneOrMore of 'a ParserOneOrMoreCrate
     | Interleave of 'a ParserInterleaveCrate
     | Interleave1 of 'a ParserInterleave1Crate
+    | Ignore of ParserCrate * Teq<'a, unit>
 
 and internal 'a ParserSequenceCrate = abstract Apply : ParserSequenceEval<'a, 'ret> -> 'ret
 and internal ParserSequenceEval<'a, 'ret> = abstract Eval : ('b -> 'c -> 'a) -> 'b Parser -> 'c Parser -> 'ret
@@ -38,6 +39,9 @@ and internal ParserInterleaveEval<'s, 'ret> = abstract Eval : ('a -> 's) -> ('s 
 
 and internal 's ParserInterleave1Crate = abstract Apply : ParserInterleave1Eval<'s, 'ret> -> 'ret
 and internal ParserInterleave1Eval<'s, 'ret> = abstract Eval : ('a -> 'b -> 'a -> 's) -> ('s -> 'b -> 'a -> 's) -> 'a Parser -> 'b Parser -> 'ret
+
+and internal ParserCrate = abstract Apply : ParserEval<'ret> -> 'ret
+and internal ParserEval<'ret> = abstract Eval : 'a Parser -> 'ret
 
 
 [<RequireQualifiedAccess>]
@@ -64,3 +68,5 @@ module Parser =
     val interleave : ('a -> 's) -> ('s -> 'b -> 'a -> 's) -> 'a Parser -> 'b Parser -> 's Parser
 
     val interleave1 : ('a -> 'b -> 'a -> 's) -> ('s -> 'b -> 'a -> 's) -> 'a Parser -> 'b Parser -> 's Parser
+
+    val ignore : 'a Parser -> unit Parser

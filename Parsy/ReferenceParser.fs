@@ -109,6 +109,12 @@ module ReferenceParser =
             yield! interleave (s a b) f p1 p2
         }
 
+    let ignore (p : 'a ParseFun) : unit ParseFun =
+        parser {
+            let! _ = p
+            yield ()
+        }
+
     let cong (teq : Teq<'a, 'b>) : Teq<'a ParseFun, 'b ParseFun> =
         Teq.Cong.believeMe teq
 
@@ -156,4 +162,9 @@ module ReferenceParser =
             crate.Apply
                 { new ParserInterleave1Eval<_,_> with
                     member __.Eval s f p1 p2 = interleave1 s f (make p1) (make p2)
+                }
+        | Ignore (crate, teq) ->
+            crate.Apply
+                { new ParserEval<_> with
+                    member __.Eval p = ignore (make p) |> Teq.castFrom (cong teq)
                 }

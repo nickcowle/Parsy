@@ -185,7 +185,16 @@ module ParserGenerator =
             <*> Arb.generate <*> Arb.generate <*> Arb.generate
             <*> Gen.elements [0..3]
 
+        let ignore (parsersAndInputs : int ParserAndSampleInput Gen) =
+
+            let makeIgnore (ParserAndSampleInput (parser, input)) =
+                make (Parser.ignore parser) input
+
+            parsersAndInputs
+            |> Gen.map makeIgnore
+
         let rec parsersAndInputsSized n =
+
             [
                 if typeof<'a> = typeof<string> then
                     yield textParser |> unbox
@@ -195,6 +204,10 @@ module ParserGenerator =
 
                 if n > 0 then
                     let parsersAndInputs = parsersAndInputsSized (n - 1)
+
+                    if typeof<'a> = typeof<unit> then
+                        yield ignore |> unbox
+
                     yield choice parsersAndInputs
                     yield sequence parsersAndInputs
                     yield map parsersAndInputs

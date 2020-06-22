@@ -320,6 +320,15 @@ module TestParser =
             actualParsed = expectedParsed
         check prop
 
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``ignoring a parser is equivalent to ignoring its parses`` (parserType : ParserType) =
+        let prop (ParserAndSampleInput (parser : int Parser, input)) =
+            let actualParsed = makeParser parserType (Parser.ignore parser) input
+            let expectedParsed = makeParser parserType parser input |> Set.map (fun (_, segment) -> (), segment)
+            actualParsed = expectedParsed
+        check prop
+
     [<Fact>]
     let ``ReferenceParser and OptimisedParser return the same parses`` () =
         let prop (ParserAndSampleInput (parser : int Parser, input)) =
