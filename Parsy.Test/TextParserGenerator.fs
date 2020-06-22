@@ -144,6 +144,14 @@ module TextParserGenerator =
             ]
             |> Gen.oneof
 
+        let newLine =
+            [
+                make TextParser.newLine System.Environment.NewLine |> Gen.constant
+                Arb.generate |> Gen.map (fun (NonNull s) -> make TextParser.newLine (System.Environment.NewLine + s))
+                Arb.generate |> Gen.map (fun (NonNull s) -> make TextParser.newLine s)
+            ]
+            |> Gen.oneof
+
         let rec parsersAndInputsSized n =
 
             match n with
@@ -156,6 +164,7 @@ module TextParserGenerator =
                     letter
                     digit
                     letterOrDigit
+                    newLine
                 ]
                 |> Gen.oneof
             | _ ->
@@ -177,6 +186,7 @@ module TextParserGenerator =
                     letter
                     digit
                     letterOrDigit
+                    newLine
                 ]
                 |> Gen.oneof
 

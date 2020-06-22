@@ -18,6 +18,7 @@ type TextParser =
     | Letter
     | Digit
     | LetterOrDigit
+    | NewLine
 
 
 [<RequireQualifiedAccess>]
@@ -50,3 +51,5 @@ module TextParser =
     let digit = Digit
 
     let letterOrDigit = LetterOrDigit
+
+    let newLine = NewLine

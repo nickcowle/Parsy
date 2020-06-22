@@ -102,3 +102,4 @@ module OptimisedTextParser =
         | Letter -> character System.Char.IsLetter
         | Digit -> character System.Char.IsDigit
         | LetterOrDigit -> character System.Char.IsLetterOrDigit
+        | NewLine -> string System.Environment.NewLine

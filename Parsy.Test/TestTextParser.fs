@@ -329,6 +329,16 @@ module TestTextParser =
             actualParsed = expectedParsed
         check prop
 
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``newLine parses the first characters of the input iff they represent a new line`` (parserType : TextParserType) =
+        let prop (NonNull input) =
+            let newLine = System.Environment.NewLine
+            let actualParsed = makeParser parserType TextParser.newLine input
+            let expectedParsed = if input.StartsWith newLine then Set.singleton (newLine , input.[newLine.Length..]) else Set.empty
+            actualParsed = expectedParsed
+        check prop
+
     [<Fact>]
     let ``ReferenceTextParser and OptimisedTextParser return the same parses`` () =
         let prop (TextParserAndSampleInput (parser, input)) =

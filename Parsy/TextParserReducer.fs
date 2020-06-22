@@ -64,5 +64,6 @@ module TextParserReducer =
         | String _
         | Letter
         | Digit
-        | LetterOrDigit ->
+        | LetterOrDigit
+        | NewLine ->
             parser
