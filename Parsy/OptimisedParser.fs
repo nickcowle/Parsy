@@ -5,34 +5,42 @@ open TypeEquality
 [<RequireQualifiedAccess>]
 module OptimisedParser =
 
-    type 'a ParseFun = ('a -> StringSegment -> unit) -> StringSegment -> unit
+    type 'a ParseFun = ('a -> StringSegment -> unit) -> string -> int -> unit
+
+    let inline parseFromSegment p sink segment = p sink segment.Value (segment.Offset + segment.Length)
+
+    let union segment1 segment2 =
+        segment1 |> StringSegment.extend segment2.Length
 
     let textParser (textParser : TextParser) : string ParseFun =
         let textParser = textParser |> TextParserReducer.reduce
         fun sink ->
-            let parser = OptimisedTextParser.make textParser (fun segment -> sink (segment |> StringSegment.current) segment)
-            fun segment -> parser segment.Value (segment.Offset + segment.Length)
+            OptimisedTextParser.make textParser (fun segment -> sink (segment |> StringSegment.current) segment)
 
     let success (a : 'a) : 'a ParseFun =
-        fun sink input ->
-            sink a (input |> StringSegment.advance 0)
+        fun sink input offset ->
+            sink a (StringSegment.make input offset 0)
 
     let fail<'a> : 'a ParseFun =
-        fun _ _ -> ()
+        fun _ _ _ -> ()
 
     let choice (parsers : 'a ParseFun list) : 'a ParseFun =
         fun sink ->
             let parsers = parsers |> List.map ((|>) sink)
-            fun input ->
+            fun input offset ->
                 for parser in parsers do
-                    parser input
+                    parser input offset
 
     let sequence (f : 'a -> 'b -> 'c) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 'c ParseFun =
         fun sink ->
-            let p1Sink a segment =
-                let p2Sink a b segment2 = sink (f a b) (segment |> StringSegment.extend segment2.Length)
-                p2 (p2Sink a) segment
-            p1 p1Sink
+            let p2Parses = ResizeArray ()
+            let p1Sink a p1Parse =
+                parseFromSegment p2 (fun b p2Parse -> struct (b, p2Parse) |> p2Parses.Add) p1Parse
+                for (struct (b, p2Parse)) in p2Parses do
+                    sink (f a b) (union p1Parse p2Parse)
+                p2Parses.Clear ()
+            fun input offset ->
+                p1 p1Sink input offset
 
     let map (f : 'a -> 'b) (p : 'a ParseFun) : 'b ParseFun =
         fun sink ->
@@ -41,48 +49,98 @@ module OptimisedParser =
 
     let bind (f : 'a -> 'b ParseFun) (p : 'a ParseFun) : 'b ParseFun =
         fun sink ->
-            fun input ->
-                let sink a segment1 = f a (fun b segment2 -> sink b (segment1 |> StringSegment.extend segment2.Length)) segment1
-                p sink input
+            let p2Parses = ResizeArray ()
+            let p1Sink a p1Parse =
+                let p2 = f a
+                parseFromSegment p2 (fun b p2Parse -> struct (b, p2Parse) |> p2Parses.Add) p1Parse
+                for (struct (b, p2Parse)) in p2Parses do
+                    sink b (union p1Parse p2Parse)
+                p2Parses.Clear ()
+            fun input offset ->
+                p p1Sink input offset
 
     let rec zeroOrMore (s : 's) (f : 's -> 'a -> 's) (p : 'a ParseFun) : 's ParseFun =
         fun sink ->
             let parses = System.Collections.Generic.Queue ()
-            fun input ->
-                parses.Enqueue struct (s, input |> StringSegment.advance 0)
+            let nextParses = ResizeArray ()
+            let addToNextParses a parsed = struct (a, parsed) |> nextParses.Add
+            fun input offset ->
+                parses.Enqueue struct (s, StringSegment.make input offset 0)
                 while parses.Count > 0 do
-                    let struct (s, segment) = parses.Dequeue ()
-                    sink s segment
-                    p (fun a segment2 -> parses.Enqueue struct (f s a, segment |> StringSegment.extend segment2.Length)) segment
+                    let struct (s, parse) = parses.Dequeue ()
+                    sink s parse
+                    parseFromSegment p addToNextParses parse
+                    for (struct (a, parse2)) in nextParses do
+                        parses.Enqueue (f s a, union parse parse2)
+                    nextParses.Clear ()
 
     and oneOrMore (s : 'a -> 's) (f : 's -> 'a -> 's) (p : 'a ParseFun) : 's ParseFun =
         fun sink ->
             let parses = System.Collections.Generic.Queue ()
-            fun input ->
-                p (fun a segment -> parses.Enqueue struct (s a, segment)) input
+            let addToParses a parse = struct (s a, parse) |> parses.Enqueue
+            let nextParses = ResizeArray ()
+            let addToNextParses a parsed = struct (a, parsed) |> nextParses.Add
+            fun input offset ->
+                p addToParses input offset
                 while parses.Count > 0 do
-                    let struct (s, segment) = parses.Dequeue ()
-                    sink s segment
-                    p (fun a segment2 -> parses.Enqueue struct (f s a, segment |> StringSegment.extend segment2.Length)) segment
+                    let struct (s, parse) = parses.Dequeue ()
+                    sink s parse
+                    parseFromSegment p addToNextParses parse
+                    for (struct (a, parse2)) in nextParses do
+                        parses.Enqueue (f s a, union parse parse2)
+                    nextParses.Clear ()
 
     let interleave (s : 'a -> 's) (f : 's -> 'b -> 'a -> 's) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 's ParseFun =
         fun sink ->
-            let rec p1Sink s allSoFarSegment =
-                sink s allSoFarSegment
-                let p2Sink b p2Segment =
-                    p1 (fun a p1Segment -> p1Sink (f s b a) (allSoFarSegment |> StringSegment.extend (p1Segment.Length + p2Segment.Length))) p2Segment
-                p2 p2Sink allSoFarSegment
-            fun input ->
-                p1 (fun a -> p1Sink (s a)) input
+            let parses = System.Collections.Generic.Queue ()
+            let addToParses a parse = struct (s a, parse) |> parses.Enqueue
+            let nextBParses = ResizeArray ()
+            let addToNextBParses b parsed = struct (b, parsed) |> nextBParses.Add
+            let nextAParses = ResizeArray ()
+            let addToNextAParses a parsed = struct (a, parsed) |> nextAParses.Add
+            fun input offset ->
+                p1 addToParses input offset
+                while parses.Count > 0 do
+                    let struct (s, parse) = parses.Dequeue ()
+                    sink s parse
+                    parseFromSegment p2 addToNextBParses parse
+                    for (struct (b, parse2)) in nextBParses do
+                        parseFromSegment p1 addToNextAParses parse2
+                        for (struct (a, parse3)) in nextAParses do
+                            parses.Enqueue (f s b a, union (union parse parse2) parse3)
+                        nextAParses.Clear ()
+                    nextBParses.Clear ()
+
 
     let interleave1 (s : 'a -> 'b -> 'a -> 's) (f : 's -> 'b -> 'a -> 's) (p1 : 'a ParseFun) (p2 : 'b ParseFun) : 's ParseFun =
         fun sink ->
-            let rec p1Sink s allSoFarSegment =
-                sink s allSoFarSegment
-                let p2Sink b p2Segment = p1 (fun a p1Segment -> p1Sink (f s b a) (allSoFarSegment |> StringSegment.extend (p1Segment.Length + p2Segment.Length))) p2Segment
-                p2 p2Sink allSoFarSegment
-            fun input ->
-                p1 (fun a1 p1Segment -> p2 (fun b p2Segment -> p1 (fun a2 p1Segment2 -> p1Sink (s a1 b a2) (p1Segment |> StringSegment.extend (p2Segment.Length + p1Segment2.Length))) p2Segment) p1Segment) input
+            let parses = System.Collections.Generic.Queue ()
+            let nextBParses = ResizeArray ()
+            let addToNextBParses b parsed = struct (b, parsed) |> nextBParses.Add
+            let nextAParses = ResizeArray ()
+            let addToNextAParses a parsed = struct (a, parsed) |> nextAParses.Add
+
+            let firstParseSink a1 parse =
+                parseFromSegment p2 addToNextBParses parse
+                for (struct (b, parse2)) in nextBParses do
+                    parseFromSegment p1 addToNextAParses parse2
+                    for (struct (a2, parse3)) in nextAParses do
+                        struct (s a1 b a2, union (union parse parse2) parse3) |> parses.Enqueue
+                    nextAParses.Clear ()
+                nextBParses.Clear ()
+
+            fun input offset ->
+                p1 firstParseSink input offset
+                while parses.Count > 0 do
+                    let struct (s, parse) = parses.Dequeue ()
+                    sink s parse
+                    parseFromSegment p2 addToNextBParses parse
+                    for (struct (b, parse2)) in nextBParses do
+                        parseFromSegment p1 addToNextAParses parse2
+                        for (struct (a, parse3)) in nextAParses do
+                            parses.Enqueue (f s b a, union (union parse parse2) parse3)
+                        nextAParses.Clear ()
+                    nextBParses.Clear ()
 
     let cong (teq : Teq<'a, 'b>) : Teq<'a ParseFun, 'b ParseFun> =
         Teq.Cong.believeMe teq

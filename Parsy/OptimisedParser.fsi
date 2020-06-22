@@ -3,4 +3,4 @@
 [<RequireQualifiedAccess>]
 module OptimisedParser =
 
-    val make : 'a Parser -> (('a -> StringSegment -> unit) -> StringSegment -> unit)
+    val make : 'a Parser -> (('a -> StringSegment -> unit) -> string -> int -> unit)

@@ -41,7 +41,7 @@ module TestUtils =
         | OptimisedParser ->
             fun parser input ->
                 let parses = ResizeArray ()
-                OptimisedParser.make parser (fun a segment -> parses.Add (a, segment)) (StringSegment.ofString input)
+                OptimisedParser.make parser (fun a segment -> parses.Add (a, segment)) input 0
                 parses
                 |> Seq.map (fun (a, segment) -> a, segment |> StringSegment.remaining)
                 |> Set.ofSeq
