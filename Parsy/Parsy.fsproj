@@ -5,6 +5,13 @@
     <WarningLevel>5</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
+    <Version>0.0.1</Version>
+    <Authors>Nicholas Cowle</Authors>
+    <Product>Parsy</Product>
+    <Description>A lightweight parser combinator library for F#.</Description>
+    <PackageProjectUrl>https://github.com/nickcowle/Parsy</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>parsy parser combinator f# fsharp initial algebra type equality</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
