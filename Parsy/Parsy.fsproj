@@ -26,6 +26,8 @@
     <Compile Include="ReferenceParser.fs" />
     <Compile Include="OptimisedParser.fsi" />
     <Compile Include="OptimisedParser.fs" />
+    <Compile Include="ParserReducer.fsi" />
+    <Compile Include="ParserReducer.fs" />
     <Compile Include="TextParserOperators.fsi" />
     <Compile Include="TextParserOperators.fs" />
     <Compile Include="ParserOperators.fsi" />

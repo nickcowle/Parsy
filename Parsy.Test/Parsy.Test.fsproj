@@ -17,6 +17,7 @@
     <Compile Include="TestTextParser.fs" />
     <Compile Include="TestTextParserReducer.fs" />
     <Compile Include="TestParser.fs" />
+    <Compile Include="TestParserReducer.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
