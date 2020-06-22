@@ -19,6 +19,7 @@ type 'a Parser =
     | Interleave1 of 'a ParserInterleave1Crate
     | Ignore of ParserCrate * Teq<'a, unit>
     | Filter of ('a -> bool) * 'a Parser
+    | Delay of (unit -> 'a Parser)
 
 and internal 'a ParserSequenceCrate = abstract Apply : ParserSequenceEval<'a, 'ret> -> 'ret
 and internal ParserSequenceEval<'a, 'ret> = abstract Eval : ('b -> 'c -> 'a) -> 'b Parser -> 'c Parser -> 'ret
@@ -75,3 +76,5 @@ module Parser =
     val optional : 'a Parser -> 'a option Parser
 
     val filter : ('a -> bool) -> 'a Parser -> 'a Parser
+
+    val delay : (unit -> 'a Parser) -> 'a Parser

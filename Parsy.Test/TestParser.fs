@@ -350,6 +350,15 @@ module TestParser =
             actualParsed = expectedParsed
         check prop
 
+    [<Theory>]
+    [<MemberData(allParserTypes)>]
+    let ``a delayed parser behaves exactly the same as the parser itself`` (parserType : ParserType) =
+        let prop (ParserAndSampleInput (parser : int Parser, input)) =
+            let actualParsed = makeParser parserType (Parser.delay (fun () -> parser)) input
+            let expectedParsed = makeParser parserType parser input
+            actualParsed = expectedParsed
+        check prop
+
     [<Fact>]
     let ``ReferenceParser and OptimisedParser return the same parses`` () =
         let prop (ParserAndSampleInput (parser : int Parser, input)) =

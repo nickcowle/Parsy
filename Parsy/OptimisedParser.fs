@@ -152,6 +152,10 @@ module OptimisedParser =
             let sink a parsed = if f a then sink a parsed
             p sink
 
+    let delay (f : unit -> 'a ParseFun) : 'a ParseFun =
+        let parser = lazy f ()
+        fun sink -> parser.Value sink
+
     let cong (teq : Teq<'a, 'b>) : Teq<'a ParseFun, 'b ParseFun> =
         Teq.Cong.believeMe teq
 
@@ -207,3 +211,5 @@ module OptimisedParser =
                 }
         | Filter (f, p) ->
             filter f (make p)
+        | Delay f ->
+            delay (f >> make)

@@ -121,6 +121,10 @@ module ReferenceParser =
             if f a then yield a
         }
 
+    let delay (f : unit -> 'a ParseFun) : 'a ParseFun =
+        let parser = lazy f ()
+        fun input -> parser.Value input
+
     let cong (teq : Teq<'a, 'b>) : Teq<'a ParseFun, 'b ParseFun> =
         Teq.Cong.believeMe teq
 
@@ -176,3 +180,5 @@ module ReferenceParser =
                 }
         | Filter (f, p) ->
             filter f (make p)
+        | Delay f ->
+            delay (f >> make)

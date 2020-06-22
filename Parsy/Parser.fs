@@ -19,6 +19,7 @@ type 'a Parser =
     | Interleave1 of 'a ParserInterleave1Crate
     | Ignore of ParserCrate * Teq<'a, unit>
     | Filter of ('a -> bool) * 'a Parser
+    | Delay of (unit -> 'a Parser)
 
 and internal 'a ParserSequenceCrate = abstract Apply : ParserSequenceEval<'a, 'ret> -> 'ret
 and internal ParserSequenceEval<'a, 'ret> = abstract Eval : ('b -> 'c -> 'a) -> 'b Parser -> 'c Parser -> 'ret
@@ -124,3 +125,5 @@ module Parser =
     let optional p = choice [ success None ; map Some p ]
 
     let filter f p = Filter (f, p)
+
+    let delay = Delay

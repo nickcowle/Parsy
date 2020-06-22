@@ -219,6 +219,14 @@ module ParserGenerator =
             |> Gen.map makeFilter
             <*> Arb.generate
 
+        let delay (parsersAndInputs : 'a ParserAndSampleInput Gen) =
+
+            let makeFilter (ParserAndSampleInput (parser, input)) =
+                make (Parser.delay (fun () -> parser)) input
+
+            parsersAndInputs
+            |> Gen.map makeFilter
+
         let rec parsersAndInputsSized n =
 
             [
@@ -243,6 +251,7 @@ module ParserGenerator =
                     yield interleave parsersAndInputs
                     yield interleave1 parsersAndInputs
                     yield filter parsersAndInputs
+                    yield delay parsersAndInputs
             ]
             |> Gen.oneof
 
