@@ -9,3 +9,5 @@ module String =
     /// but true on Linux.
     /// In this custom version, however, it is false on both platforms.
     val startsWith : string -> string -> bool
+
+    val endsWith : string -> string -> bool

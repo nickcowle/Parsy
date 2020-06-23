@@ -25,7 +25,7 @@ module TestParser =
     [<MemberData(allParserTypes)>]
     let ``Parsers always returns a value and some end segment of the input`` (parserType : ParserType) =
         let prop (ParserAndSampleInput (parser : int Parser, input)) =
-            makeParser parserType parser input |> Set.forall (fun (_, rest) -> input.EndsWith rest)
+            makeParser parserType parser input |> Set.forall (fun (_, rest) -> input |> String.endsWith rest)
         check prop
 
     [<Theory>]
