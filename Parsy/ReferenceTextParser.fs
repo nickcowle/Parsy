@@ -85,7 +85,7 @@ module ReferenceTextParser =
 
     let string (s : string) : Parser =
         fun (input : string) ->
-            if input.StartsWith s then
+            if input |> String.startsWith s then
                 [ input.[0..s.Length - 1], input.[s.Length..] ]
             else
                 []

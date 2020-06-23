@@ -15,6 +15,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="String.fsi" />
+    <Compile Include="String.fs" />
     <Compile Include="StringSegment.fsi" />
     <Compile Include="StringSegment.fs" />
     <Compile Include="TextParser.fsi" />

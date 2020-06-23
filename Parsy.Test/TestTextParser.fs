@@ -307,7 +307,7 @@ module TestTextParser =
     let ``string parses the initial segment of the input iff it matches the supplied string`` (parserType : TextParserType) =
         let prop (NonNull s1) (NonNull s2) =
             let actualParsed = makeParser parserType (TextParser.string s1) s2
-            let expectedParsed = if s2.StartsWith s1 then Set.singleton (s1 , s2.Substring s1.Length) else Set.empty
+            let expectedParsed = if s2 |> String.startsWith s1 then Set.singleton (s1 , s2.Substring s1.Length) else Set.empty
             actualParsed = expectedParsed
         check prop
 
@@ -344,7 +344,7 @@ module TestTextParser =
         let prop (NonNull input) =
             let newLine = System.Environment.NewLine
             let actualParsed = makeParser parserType TextParser.newLine input
-            let expectedParsed = if input.StartsWith newLine then Set.singleton (newLine , input.[newLine.Length..]) else Set.empty
+            let expectedParsed = if input |> String.startsWith newLine then Set.singleton (newLine , input.[newLine.Length..]) else Set.empty
             actualParsed = expectedParsed
         check prop
 
